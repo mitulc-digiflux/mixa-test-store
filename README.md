@@ -23,7 +23,7 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_GTM_ID` | GTM container. Add the mixa script as a Custom HTML tag, trigger All Pages (snippet on `/setup`). |
 | `NEXT_PUBLIC_MIXA_BRAND_ID` | Only for `direct` mode. |
 
-Creator links must reach this store, so for a real test `SITE_URL` must be public (ngrok / cloudflared tunnel or a deploy). Orders are kept in `data/orders.json`, which suits local testing and does not persist on serverless hosts.
+Creator links must reach this store, so for a real test `SITE_URL` must be public (ngrok / cloudflared tunnel or a deploy). Orders are kept in `data/orders.json` locally and in Netlify Blobs (store `orders`) on Netlify, where the function filesystem is read-only. On Netlify, `SITE_URL` falls back to Netlify's `URL`.
 
 ## Test flow
 

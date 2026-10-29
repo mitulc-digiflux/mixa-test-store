@@ -1,7 +1,11 @@
 import "server-only";
 
 export const config = {
-  siteUrl: (process.env.SITE_URL || "http://localhost:3000").replace(/\/+$/, ""),
+  // Netlify sets URL to the site's main address; SITE_URL wins if given.
+  siteUrl: (process.env.SITE_URL || process.env.URL || "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  ),
   brandId: (process.env.MIXA_BRAND_ID || "").trim(),
   webhookSecret: (process.env.MIXA_WEBHOOK_SECRET || "").trim(),
   webhookUrl: (

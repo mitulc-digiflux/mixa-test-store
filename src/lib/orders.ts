@@ -1,6 +1,7 @@
 import "server-only";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getStore, type Store } from "@netlify/blobs";
 
 const STORE_PATH = path.join(process.cwd(), "data", "orders.json");
 
@@ -46,50 +47,93 @@ export type Order = {
   webhooks: WebhookLog[];
 };
 
-async function readAll(): Promise<Order[]> {
-  try {
-    return JSON.parse(await readFile(STORE_PATH, "utf8")) as Order[];
-  } catch {
-    return [];
+type Backend = {
+  all(): Promise<Order[]>;
+  get(orderNumber: string): Promise<Order | undefined>;
+  put(order: Order): Promise<void>;
+};
+
+/** Local dev: one JSON file. */
+const fileBackend: Backend = {
+  async all() {
+    try {
+      return JSON.parse(await readFile(STORE_PATH, "utf8")) as Order[];
+    } catch {
+      return [];
+    }
+  },
+  async get(orderNumber) {
+    return (await this.all()).find((o) => o.orderNumber === orderNumber);
+  },
+  async put(order) {
+    const orders = (await this.all()).filter((o) => o.orderNumber !== order.orderNumber);
+    orders.push(order);
+    await mkdir(path.dirname(STORE_PATH), { recursive: true });
+    await writeFile(STORE_PATH, JSON.stringify(orders, null, 2));
+  },
+};
+
+/** Netlify: the function filesystem is read-only, so use Blobs, one key per order. */
+function blobBackend(store: Store): Backend {
+  return {
+    async all() {
+      const { blobs } = await store.list();
+      const orders = await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" })));
+      return orders.filter(Boolean) as Order[];
+    },
+    async get(orderNumber) {
+      return ((await store.get(orderNumber, { type: "json" })) as Order | null) ?? undefined;
+    },
+    async put(order) {
+      await store.setJSON(order.orderNumber, order);
+    },
+  };
+}
+
+let backend: Backend | null = null;
+
+function db(): Backend {
+  if (!backend) {
+    try {
+      // Throws outside Netlify (no Blobs context), e.g. `npm run dev`.
+      backend = blobBackend(getStore({ name: "orders", consistency: "strong" }));
+    } catch {
+      backend = fileBackend;
+    }
   }
+  return backend;
 }
 
 // Serialise writes so two quick clicks cannot overwrite each other.
 let queue: Promise<unknown> = Promise.resolve();
 
-function mutate<T>(fn: (orders: Order[]) => T | Promise<T>): Promise<T> {
-  const run = queue.then(async () => {
-    const orders = await readAll();
-    const result = await fn(orders);
-    await mkdir(path.dirname(STORE_PATH), { recursive: true });
-    await writeFile(STORE_PATH, JSON.stringify(orders, null, 2));
-    return result;
-  });
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = queue.then(fn);
   queue = run.catch(() => undefined);
   return run;
 }
 
 export async function listOrders(): Promise<Order[]> {
-  return (await readAll()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return (await db().all()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export async function getOrder(orderNumber: string): Promise<Order | undefined> {
-  return (await readAll()).find((o) => o.orderNumber === orderNumber);
+export function getOrder(orderNumber: string): Promise<Order | undefined> {
+  return db().get(orderNumber);
 }
 
 export function saveOrder(order: Order): Promise<void> {
-  return mutate((orders) => {
-    orders.push(order);
-  });
+  return serial(() => db().put(order));
 }
 
 export function updateOrder(
   orderNumber: string,
   fn: (order: Order) => void,
 ): Promise<Order | undefined> {
-  return mutate((orders) => {
-    const order = orders.find((o) => o.orderNumber === orderNumber);
-    if (order) fn(order);
+  return serial(async () => {
+    const order = await db().get(orderNumber);
+    if (!order) return undefined;
+    fn(order);
+    await db().put(order);
     return order;
   });
 }

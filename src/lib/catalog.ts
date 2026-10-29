@@ -1,5 +1,5 @@
 import "server-only";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parse } from "csv-parse/sync";
 
@@ -35,7 +35,7 @@ type Catalog = {
   countries: string[];
 };
 
-let cache: Catalog | null = null;
+let cache: (Catalog & { mtimeMs: number }) | null = null;
 
 function toProduct(row: CsvRow): Product {
   return {
@@ -59,7 +59,9 @@ function toProduct(row: CsvRow): Product {
 }
 
 export function loadCatalog(): Catalog {
-  if (cache) return cache;
+  // Re-read when the CSV is swapped, without restarting the server.
+  const { mtimeMs } = statSync(CSV_PATH);
+  if (cache?.mtimeMs === mtimeMs) return cache;
   const text = readFileSync(CSV_PATH, "utf8");
   const rows: CsvRow[] = parse(text, {
     columns: true,
@@ -71,7 +73,7 @@ export function loadCatalog(): Catalog {
   const products = rows.map(toProduct);
   const byKey = new Map(products.map((p) => [`${p.sku}|${p.country}`, p]));
   const countries = [...new Set(products.map((p) => p.country))].sort();
-  cache = { header, rows, products, byKey, countries };
+  cache = { header, rows, products, byKey, countries, mtimeMs };
   return cache;
 }
 

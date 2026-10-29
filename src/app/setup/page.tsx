@@ -37,7 +37,7 @@ export default async function SetupPage() {
           Catalog → Upload CSV.
         </p>
         <div className="flex flex-wrap gap-2 text-sm">
-          {[25, 100, 0].map((n) => (
+          {[10, 0].map((n) => (
             <a
               key={n}
               href={`/api/catalog${n ? `?limit=${n}` : ""}`}
@@ -47,7 +47,7 @@ export default async function SetupPage() {
             </a>
           ))}
           <a href="/api/catalog?rewrite=0" className="rounded-md px-3 py-1.5 text-stone-500 underline">
-            original file
+            data/products.csv as stored
           </a>
         </div>
         {config.siteUrl.includes("localhost") && (
