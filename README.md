@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# mixa Test Store
 
-## Getting Started
+A fake brand storefront to test the mixa **CSV integration** end to end:
 
-First, run the development server:
+1. **Catalogue CSV**: download a CSV from `/setup` (built from `data/products.csv`) and upload it in the mixa Brands portal. `destinationUrl` is rewritten to this store, so creator links land here.
+2. **Website tracking**: the mixa SDK is loaded through **GTM** (or directly, never both). The header shows whether a click ID is saved.
+3. **Orders, server to server**: Pay → signed `POST /v1/orders/webhook`. From `/orders` you can **Cancel** (`event: order.cancelled`), **Refund** (`event: order.refunded`) or **Resend**. Every call's request and response is saved and shown on the order page.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fill in brand ID, secret, GTM ID
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Env | What |
+| --- | --- |
+| `SITE_URL` | Public URL of this store. Sent as `shopUrl`, used in the exported CSV. |
+| `MIXA_BRAND_ID`, `MIXA_WEBHOOK_SECRET` | From onboarding. Server only. |
+| `MIXA_WEBHOOK_URL` | Defaults to `https://api.mixa.global/v1/orders/webhook`. |
+| `NEXT_PUBLIC_TRACKING_MODE` | `gtm`, `direct` or `none` (coupon only). |
+| `NEXT_PUBLIC_GTM_ID` | GTM container. Add the mixa script as a Custom HTML tag, trigger All Pages (snippet on `/setup`). |
+| `NEXT_PUBLIC_MIXA_BRAND_ID` | Only for `direct` mode. |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Creator links must reach this store, so for a real test `SITE_URL` must be public (ngrok / cloudflared tunnel or a deploy). Orders are kept in `data/orders.json`, which suits local testing and does not persist on serverless hosts.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Test flow
 
-## Learn More
+1. `/setup` → download CSV → upload in the portal → creator adds a product and gets a link.
+2. Open the creator link → header shows `click mx…`.
+3. Add to cart → Pay (optionally with an active creator coupon).
+4. `/orders/<number>` → check the webhook response (`200` = saved).
+5. Cancel or refund from `/orders`, and check the response again.
 
-To learn more about Next.js, take a look at the following resources:
+The **Open fake creator link** button on `/setup` only checks that the script saves a click ID. mixa will not create commission for a click it never issued.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Backend notes (be-apis, checked 29 Oct 2026)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `shopUrl` is **required** by `assertWebhookOrderFields`, but the PDF guide does not list it. Without it the backend returns `400 Invalid order`. This store always sends it.
+- `OrderEventDto` has **no `event` field**, and the ValidationPipe runs with `whitelist: true`, so `event: "order.cancelled"` is stripped. A cancel then looks like the same order again (idempotency key `wh_<brandId>_<orderNumber>`) and comes back as already received. Cancel and refund will not change commission until the backend handles them.

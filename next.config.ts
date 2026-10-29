@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Test store: every page reads live data (orders file, query params), so
+  // Cache Components / PPR would only add Suspense boilerplate here.
   turbopack: {
     rules: {
       "*.css": {
@@ -11,6 +10,10 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  images: {
+    // CSV images are already compressed webp on R2; skip the optimizer.
+    unoptimized: true,
   },
 };
 

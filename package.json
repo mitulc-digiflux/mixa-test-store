@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next/third-parties": "^16.4.3",
+    "csv-parse": "^7.0.3",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
