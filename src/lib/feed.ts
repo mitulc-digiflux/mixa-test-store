@@ -38,6 +38,9 @@ const fileBackend: Backend = {
 function blobBackend(store: Store): Backend {
   return {
     async read() {
+      // get() on a key that was never written can hang in the Netlify runtime, so check with list() first
+      const { blobs } = await store.list({ prefix: BLOB_KEY });
+      if (!blobs.some((b) => b.key === BLOB_KEY)) return null;
       return (await store.get(BLOB_KEY, { type: "json" })) as CsvRow[] | null;
     },
     async write(rows) {

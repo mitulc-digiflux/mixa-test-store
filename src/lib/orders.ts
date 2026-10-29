@@ -82,6 +82,9 @@ function blobBackend(store: Store): Backend {
       return orders.filter(Boolean) as Order[];
     },
     async get(orderNumber) {
+      // get() on a key that was never written can hang in the Netlify runtime, so check with list() first
+      const { blobs } = await store.list({ prefix: orderNumber });
+      if (!blobs.some((b) => b.key === orderNumber)) return undefined;
       return ((await store.get(orderNumber, { type: "json" })) as Order | null) ?? undefined;
     },
     async put(order) {
