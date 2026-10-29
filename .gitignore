@@ -43,3 +43,4 @@ next-env.d.ts
 
 # local order store written by the test store
 /data/orders.json
+/data/feed.json

@@ -28,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             <Link href="/" className="text-stone-600 hover:text-stone-900">Shop</Link>
             <Link href="/orders" className="text-stone-600 hover:text-stone-900">Orders</Link>
+            <Link href="/feed" className="text-stone-600 hover:text-stone-900">XML feed</Link>
             <Link href="/setup" className="text-stone-600 hover:text-stone-900">Setup</Link>
             <span className="ms-auto flex items-center gap-4">
               <ClickIdBadge />

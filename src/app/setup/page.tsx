@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { config, configProblems } from "@/lib/config";
 import { loadCatalog } from "@/lib/catalog";
@@ -50,10 +51,14 @@ export default async function SetupPage() {
             data/products.csv as stored
           </a>
         </div>
+        <p className="text-sm text-stone-600">
+          Or add <code>{config.siteUrl}/api/feed</code> as an XML feed (Catalog → XML feed). Pick
+          which products are in it on <Link href="/feed" className="underline">XML feed</Link>.
+        </p>
         {config.siteUrl.includes("localhost") && (
           <p className="text-xs text-amber-700">
-            SITE_URL is localhost. Creator links from mixa will only open on this machine. Use a
-            tunnel (ngrok / cloudflared) or a deploy URL if others test too.
+            SITE_URL is localhost. Creator links from mixa will only open on this machine, and mixa
+            can&apos;t fetch the XML feed at all. Use a tunnel (ngrok / cloudflared) or a deploy URL.
           </p>
         )}
       </section>

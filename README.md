@@ -35,7 +35,7 @@ Creator links must reach this store, so for a real test `SITE_URL` must be publi
 
 The **Open fake creator link** button on `/setup` only checks that the script saves a click ID. mixa will not create commission for a click it never issued.
 
-## Backend notes (be-apis, checked 29 Oct 2026)
+## Backend notes (be-apis `env/prod` @ c8a8edc, checked 29 Oct 2026)
 
 - `shopUrl` is **required** by `assertWebhookOrderFields`, but the PDF guide does not list it. Without it the backend returns `400 Invalid order`. This store always sends it.
-- `OrderEventDto` has **no `event` field**, and the ValidationPipe runs with `whitelist: true`, so `event: "order.cancelled"` is stripped. A cancel then looks like the same order again (idempotency key `wh_<brandId>_<orderNumber>`) and comes back as already received. Cancel and refund will not change commission until the backend handles them.
+- Cancel and refund are handled: `event` = `order.cancelled` / `order.refunded`, with optional `remainingOrderValue` for refunds (this store sends `0`, a full refund). Each gets its own idempotency key, so it never collides with the paid order. The PDF guide does not document `remainingOrderValue` yet.

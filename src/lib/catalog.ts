@@ -2,6 +2,7 @@ import "server-only";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parse } from "csv-parse/sync";
+import { config } from "./config";
 
 export const CSV_PATH = path.join(process.cwd(), "data", "products.csv");
 
@@ -83,6 +84,33 @@ export function getProduct(sku: string, country: string): Product | undefined {
 
 export function getMarkets(sku: string): Product[] {
   return loadCatalog().products.filter((p) => p.sku === sku);
+}
+
+/** Point destinationUrl at this store so creator links land here. */
+export function rewriteRow(row: CsvRow): CsvRow {
+  const r = { ...row };
+  const country = (r.country || "AE").toUpperCase();
+  const url = `${config.siteUrl}/products/${encodeURIComponent(r.sku)}?country=${country}`;
+  r.destinationUrl = url;
+  if ("destinationurl_ar" in r) r.destinationurl_ar = `${url}&lang=ar`;
+  return r;
+}
+
+/**
+ * Raw rows for the catalogue CSV export.
+ * limit keeps the first N SKUs with all their market rows.
+ */
+export function exportRows(opts: { limit?: number; rewrite?: boolean }): CsvRow[] {
+  const keep = new Set<string>();
+  const out: CsvRow[] = [];
+  for (const row of loadCatalog().rows) {
+    if (opts.limit && !keep.has(row.sku)) {
+      if (keep.size >= opts.limit) continue;
+      keep.add(row.sku);
+    }
+    out.push(opts.rewrite ? rewriteRow(row) : { ...row });
+  }
+  return out;
 }
 
 export const PAGE_SIZE = 24;

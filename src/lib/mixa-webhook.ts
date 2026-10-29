@@ -35,9 +35,12 @@ function buildBody(order: Order, kind: WebhookKind): Record<string, unknown> {
     })),
   };
   if (kind === "cancel") body.event = "order.cancelled";
-  // The guide does not define a refund format ("confirmed at onboarding").
-  // order.refunded is what the Salla mapper already understands.
-  if (kind === "refund") body.event = "order.refunded";
+  // tracking-service (env/prod, Oct 2026): refund takes remainingOrderValue;
+  // this store only does full refunds, so nothing remains.
+  if (kind === "refund") {
+    body.event = "order.refunded";
+    body.remainingOrderValue = 0;
+  }
 
   for (const k of Object.keys(body)) {
     if (body[k] === undefined || body[k] === "") delete body[k];

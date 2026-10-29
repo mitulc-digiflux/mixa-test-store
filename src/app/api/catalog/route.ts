@@ -1,5 +1,4 @@
-import { loadCatalog } from "@/lib/catalog";
-import { config } from "@/lib/config";
+import { exportRows, loadCatalog } from "@/lib/catalog";
 
 function cell(value: string): string {
   return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -16,22 +15,9 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const limit = Number(params.get("limit")) || 0;
   const rewrite = params.get("rewrite") !== "0";
-  const { header, rows } = loadCatalog();
-
-  const keep = new Set<string>();
+  const { header } = loadCatalog();
   const out: string[] = [header.map(cell).join(",")];
-  for (const row of rows) {
-    if (limit && !keep.has(row.sku)) {
-      if (keep.size >= limit) continue;
-      keep.add(row.sku);
-    }
-    const r = { ...row };
-    if (rewrite) {
-      const country = (r.country || "AE").toUpperCase();
-      const url = `${config.siteUrl}/products/${encodeURIComponent(r.sku)}?country=${country}`;
-      r.destinationUrl = url;
-      if ("destinationurl_ar" in r) r.destinationurl_ar = `${url}&lang=ar`;
-    }
+  for (const r of exportRows({ limit, rewrite })) {
     out.push(header.map((h) => cell(r[h] ?? "")).join(","));
   }
 
