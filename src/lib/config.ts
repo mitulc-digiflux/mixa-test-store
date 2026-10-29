@@ -1,11 +1,19 @@
 import "server-only";
 
+/**
+ * Netlify sets URL to the site's main address; SITE_URL wins if given.
+ * A localhost SITE_URL copied from .env.local into Netlify would put
+ * localhost links in the feed and CSV, so on Netlify it is ignored.
+ */
+function resolveSiteUrl(): string {
+  const site = (process.env.SITE_URL || "").trim();
+  const onNetlify = process.env.NETLIFY === "true" || !!process.env.URL;
+  const usable = site && !(onNetlify && /localhost|127\.0\.0\.1/.test(site));
+  return ((usable ? site : process.env.URL) || "http://localhost:3000").replace(/\/+$/, "");
+}
+
 export const config = {
-  // Netlify sets URL to the site's main address; SITE_URL wins if given.
-  siteUrl: (process.env.SITE_URL || process.env.URL || "http://localhost:3000").replace(
-    /\/+$/,
-    "",
-  ),
+  siteUrl: resolveSiteUrl(),
   brandId: (process.env.MIXA_BRAND_ID || "").trim(),
   webhookSecret: (process.env.MIXA_WEBHOOK_SECRET || "").trim(),
   webhookUrl: (
