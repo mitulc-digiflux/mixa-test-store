@@ -45,6 +45,38 @@ export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
         </div>
       </div>
 
+      <section className="flex flex-col gap-2">
+        <h2 className="font-medium">Google Shopping feeds (like real brands)</h2>
+        <p className="text-sm text-stone-600">
+          Same products, as RSS with <code>g:</code> tags: one URL per market and language, price as
+          &quot;279.89 AED&quot;, stock only as availability, same <code>g:id</code> in EN and AR.{" "}
+          <b>salla</b> = every field g:-prefixed (like ra7eek), <b>channable</b> = plain
+          title/link/description (like revibe).
+        </p>
+        <ul className="flex flex-col gap-1 text-sm">
+          {[...new Set(feed.flatMap(([, rows]) => rows.map((r) => (r.country || "AE").toUpperCase())))]
+            .sort()
+            .flatMap((country) =>
+              (["en", "ar"] as const).flatMap((lang) =>
+                (["salla", "channable"] as const).map((style) => {
+                  const path = `/api/feed/google?country=${country}&lang=${lang}&style=${style}`;
+                  return (
+                    <li key={path} className="flex flex-wrap items-center gap-2">
+                      <span className="w-36 text-xs text-stone-500">
+                        {country} · {lang.toUpperCase()} · {style}
+                      </span>
+                      <a href={path} className="break-all font-mono text-xs underline">
+                        {config.siteUrl}
+                        {path}
+                      </a>
+                    </li>
+                  );
+                }),
+              ),
+            )}
+        </ul>
+      </section>
+
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">
           In the feed: {feed.length} SKUs, {feed.reduce((n, [, rows]) => n + rows.length, 0)} rows

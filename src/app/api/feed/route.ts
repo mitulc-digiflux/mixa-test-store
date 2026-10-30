@@ -1,14 +1,7 @@
 import { loadCatalog, rewriteRow } from "@/lib/catalog";
 import { config } from "@/lib/config";
 import { listFeed } from "@/lib/feed";
-
-function xml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { xml } from "@/lib/xml";
 
 /**
  * XML feed for mixa's "XML feed" source, built from the rows managed on /feed
