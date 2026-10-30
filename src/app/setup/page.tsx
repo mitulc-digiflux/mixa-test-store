@@ -52,8 +52,10 @@ export default async function SetupPage() {
           </a>
         </div>
         <p className="text-sm text-stone-600">
-          Or add <code>{config.siteUrl}/api/feed</code> as an XML feed (Catalog → XML feed). Pick
-          which products are in it on <Link href="/feed" className="underline">XML feed</Link>.
+          Or add <code>{config.siteUrl}/api/feed?country=AE&amp;lang=en</code> as an XML feed
+          (Catalog → XML feed). It is Google Shopping RSS like real brands send, one URL per market
+          and language. Pick which products are in it on{" "}
+          <Link href="/feed" className="underline">XML feed</Link>.
         </p>
         {config.siteUrl.includes("localhost") && (
           <p className="text-xs text-amber-700">

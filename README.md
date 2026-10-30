@@ -3,6 +3,7 @@
 A fake brand storefront to test the mixa **CSV integration** end to end:
 
 1. **Catalogue CSV**: download a CSV from `/setup` (built from `data/products.csv`) and upload it in the mixa Brands portal. `destinationUrl` is rewritten to this store, so creator links land here.
+   **Or XML feed**: `/api/feed?country=AE&lang=en` is Google Shopping RSS shaped like real brand feeds (one URL per market + language, `g:price` as `"279.89 AED"`, stock only as `g:availability`). `&style=channable` switches to plain `title`/`link`/`description` and `in_stock`. Pick the products on `/feed`.
 2. **Website tracking**: the mixa SDK is loaded through **GTM** (or directly, never both). The header shows whether a click ID is saved.
 3. **Orders, server to server**: Pay → signed `POST /v1/orders/webhook`. From `/orders` you can **Cancel** (`event: order.cancelled`), **Refund** (`event: order.refunded`) or **Resend**. Every call's request and response is saved and shown on the order page.
 

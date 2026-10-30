@@ -36,46 +36,36 @@ export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
           remove here and the feed changes right away, no deploy. mixa picks it up on its next sync.
           Prices here only change the feed; checkout on this store still uses the CSV price.
         </p>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <code className="rounded-md bg-stone-100 px-2 py-1">{config.siteUrl}/api/feed</code>
-          <a href="/api/feed" className="rounded-md border border-stone-300 bg-white px-3 py-1.5">
-            Open feed
-          </a>
-          <ResetButton />
-        </div>
-      </div>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="font-medium">Google Shopping feeds (like real brands)</h2>
         <p className="text-sm text-stone-600">
-          Same products, as RSS with <code>g:</code> tags: one URL per market and language, price as
-          &quot;279.89 AED&quot;, stock only as availability, same <code>g:id</code> in EN and AR.{" "}
-          <b>salla</b> = every field g:-prefixed (like ra7eek), <b>channable</b> = plain
-          title/link/description (like revibe).
+          Google Shopping RSS, like real brands send it: one URL per market and language, price as
+          &quot;279.89 AED&quot;, stock only as availability, the same <code>g:id</code> in EN and
+          AR. Add <code>&amp;style=channable</code> for plain title/link/description and
+          &quot;in_stock&quot; (like revibe); the default is every field g:-prefixed (like ra7eek).
         </p>
         <ul className="flex flex-col gap-1 text-sm">
           {[...new Set(feed.flatMap(([, rows]) => rows.map((r) => (r.country || "AE").toUpperCase())))]
             .sort()
             .flatMap((country) =>
-              (["en", "ar"] as const).flatMap((lang) =>
-                (["salla", "channable"] as const).map((style) => {
-                  const path = `/api/feed/google?country=${country}&lang=${lang}&style=${style}`;
-                  return (
-                    <li key={path} className="flex flex-wrap items-center gap-2">
-                      <span className="w-36 text-xs text-stone-500">
-                        {country} · {lang.toUpperCase()} · {style}
-                      </span>
-                      <a href={path} className="break-all font-mono text-xs underline">
-                        {config.siteUrl}
-                        {path}
-                      </a>
-                    </li>
-                  );
-                }),
-              ),
+              (["en", "ar"] as const).map((lang) => {
+                const path = `/api/feed?country=${country}&lang=${lang}`;
+                return (
+                  <li key={path} className="flex flex-wrap items-center gap-2">
+                    <span className="w-16 text-xs text-stone-500">
+                      {country} · {lang.toUpperCase()}
+                    </span>
+                    <a href={path} className="break-all font-mono text-xs underline">
+                      {config.siteUrl}
+                      {path}
+                    </a>
+                  </li>
+                );
+              }),
             )}
         </ul>
-      </section>
+        <div>
+          <ResetButton />
+        </div>
+      </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">
