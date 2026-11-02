@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { addSku, removeSku, resetFeed, updateRow, type FeedPatch } from "@/lib/feed";
+import { addSku, removeRow, removeSku, resetFeed, updateRow, type FeedPatch } from "@/lib/feed";
 
 type FeedAction =
   | { action: "add"; sku: string }
   | { action: "update"; sku: string; country: string; patch: FeedPatch }
   | { action: "remove"; sku: string }
+  | { action: "removeRow"; sku: string; country: string }
   | { action: "reset" };
 
 /** Changes the rows /api/feed serves. Used by the /feed page. */
@@ -21,6 +22,9 @@ export async function POST(req: Request) {
         break;
       case "remove":
         rows = await removeSku(String(input.sku ?? ""));
+        break;
+      case "removeRow":
+        rows = await removeRow(String(input.sku ?? ""), String(input.country ?? ""));
         break;
       case "reset":
         rows = await resetFeed();

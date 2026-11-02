@@ -1,9 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { loadCatalog, type CsvRow } from "@/lib/catalog";
 import { config } from "@/lib/config";
-import { listFeed, STARTER_SKUS } from "@/lib/feed";
-import { AddButton, RemoveButton, ResetButton, RowEditor } from "./feed-client";
+import { listFeed, STARTER_SKUS, withLinks } from "@/lib/feed";
+import { AddButton, MarketEditor, RemoveButton, ResetButton } from "./feed-client";
 
 function bySku(rows: CsvRow[]): [string, CsvRow[]][] {
   const groups = new Map<string, CsvRow[]>();
@@ -72,39 +73,34 @@ export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
           In the feed: {feed.length} SKUs, {feed.reduce((n, [, rows]) => n + rows.length, 0)} rows
         </h2>
         {feed.length === 0 && <p className="text-sm text-stone-600">Empty feed. Add products below.</p>}
+        {feed.length > 0 && (
+          <p className="text-sm text-stone-600">
+            Each <strong>market</strong> (AE, SA) has its own price, stock and status. Inside it, each{" "}
+            <strong>language</strong> (EN, AR) has its own title, description and link, and can be switched off on
+            its own: that is what the matching feed URL above serves.
+          </p>
+        )}
         {feed.map(([sku, rows]) => (
-          <div key={sku} className="rounded-lg border border-stone-200 bg-white">
-            <div className="flex flex-wrap items-center gap-3 border-b border-stone-100 px-3 py-2">
-              <Link href={`/products/${encodeURIComponent(sku)}`} className="font-mono text-xs underline">
-                {sku}
-              </Link>
-              <span className="text-xs text-stone-500">{rows[0].brand_en}</span>
-              <span className="ms-auto">
-                <RemoveButton sku={sku} />
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-xs text-stone-500">
-                  <tr>
-                    <th className="p-2 text-start font-normal">Market</th>
-                    <th className="p-2 text-start font-normal">Title</th>
-                    <th className="p-2 text-start font-normal">MRP</th>
-                    <th className="p-2 text-start font-normal">Price</th>
-                    <th className="p-2" />
-                    <th className="p-2 text-start font-normal">Stock</th>
-                    <th className="p-2 text-start font-normal">Status</th>
-                    <th className="p-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {rows.map((r) => (
-                    <RowEditor key={`${r.sku}|${r.country}|${JSON.stringify(r)}`} row={r} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <article key={sku} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3">
+            <header className="flex flex-wrap items-center gap-3">
+              {rows[0].image_1 && (
+                <Image src={rows[0].image_1} alt="" width={40} height={50} className="h-[50px] w-10 rounded object-cover" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <Link href={`/products/${encodeURIComponent(sku)}`} className="font-mono text-xs underline">
+                    {sku}
+                  </Link>
+                  <span className="text-xs text-stone-500">{rows[0].brand_en}</span>
+                </div>
+                <p className="truncate text-sm font-medium">{rows[0].title_en}</p>
+              </div>
+              {rows.length > 1 && <RemoveButton sku={sku} markets={rows.length} />}
+            </header>
+            {rows.map((r) => (
+              <MarketEditor key={`${r.sku}|${r.country}`} row={withLinks(r, true)} />
+            ))}
+          </article>
         ))}
       </section>
 

@@ -1,6 +1,6 @@
-import { rewriteRow, type CsvRow } from "@/lib/catalog";
+import type { CsvRow } from "@/lib/catalog";
 import { config } from "@/lib/config";
-import { listFeed } from "@/lib/feed";
+import { inLangFeed, listFeed, withLinks } from "@/lib/feed";
 import { xml } from "@/lib/xml";
 
 type Style = "salla" | "channable";
@@ -15,6 +15,8 @@ type Style = "salla" | "channable";
  *   /api/feed?country=AE&lang=en&style=salla   (these are the defaults)
  *   /api/feed?rewrite=0                         original URLs, untouched
  *
+ * Links point at this store, except ones edited on /feed, which are served as typed.
+ *
  * style=salla      every field g:-prefixed, guid, "in stock" (Salla stores, e.g. ra7eek)
  * style=channable  plain title/link/description, "in_stock" (Shopify via Channable, e.g. revibe)
  */
@@ -27,8 +29,14 @@ export async function GET(req: Request) {
 
   // Real feeds leave out products the shop does not sell, so drop INACTIVE/DRAFT.
   const rows = (await listFeed())
-    .filter((r) => (r.country || "AE").toUpperCase() === country && r.status === "ACTIVE")
-    .map((r) => (rewrite ? rewriteRow(r) : r));
+    .filter(
+      (r) =>
+        (r.country || "AE").toUpperCase() === country &&
+        r.status === "ACTIVE" &&
+        // A row can be switched off for one language only (e.g. AR yes, EN no).
+        inLangFeed(r, ar ? "ar" : "en"),
+    )
+    .map((r) => withLinks(r, rewrite));
 
   const lang = ar ? "AR" : "EN";
   const out = [
